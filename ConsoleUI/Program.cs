@@ -11,7 +11,7 @@ namespace ConsoleUI
         {
              ProductTest();
             //Ioc
-            //CategoryTest();
+           //CategoryTest();
 
         }
 
@@ -44,12 +44,20 @@ namespace ConsoleUI
             //    Console.WriteLine(product.ProductName);
 
             //}
-
-            foreach (var product in productManager.GetProductDetails())//kategorısı 2 olanlar gelen 
+            var result = productManager.GetProductDetails();
+            if (result.Success)
             {
-                Console.WriteLine(product.ProductName +"/"+product.CategoryName);
+                foreach (var product in result.Data)//kategorısı 2 olanlar gelen 
+                {
+                    Console.WriteLine(product.ProductName + "/" + product.CategoryName);
 
+                }
             }
+            else
+            {
+                Console.WriteLine(result.Message);
+            }
+            
         }
     }
 }
