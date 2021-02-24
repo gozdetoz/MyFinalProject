@@ -14,6 +14,7 @@ namespace Core.Aspects.Autofac.Validation
         private Type _validatorType;
         public ValidationAspect(Type validatorType)
         {
+            //defensive coding  --yanlıs tıp gonderılmesın dıye gonderılen bir IValidator mu buna bakıyor 
             if (!typeof(IValidator).IsAssignableFrom(validatorType))
             {
                 throw new System.Exception("Bu bir doğrulama sınıfı değil");
