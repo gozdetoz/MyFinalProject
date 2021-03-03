@@ -2,6 +2,8 @@
 using Business.BusinessAspects.Autofac;
 using Business.Constants;
 using Business.ValidationRules.FluentValidation;
+using Core.Aspects.Autofac.Caching;
+using Core.Aspects.Autofac.Transaction;
 using Core.Aspects.Autofac.Validation;
 using Core.CrossCuttingConcerns.Validation;
 using Core.Utilities.Business;
@@ -21,15 +23,19 @@ namespace Business.Concrete
     {
         IProductDal _productDal;
         ICategoryService _categoryService;
-        
-        public ProductManager(IProductDal productDal ,ICategoryService categoryService)
+
+        public ProductManager(IProductDal productDal, ICategoryService categoryService)
         {
             _productDal = productDal;
             _categoryService = categoryService;
-           
+
         }
-         [SecuredOperation("product.add,admin")]
-         [ValidationAspect(typeof(ProductValidator))]
+
+
+
+        [SecuredOperation("product.add,admin")]
+        [ValidationAspect(typeof(ProductValidator))]
+        [CacheRemoveAspect("IProductService.Get")]
         public IResult Add(Product product)
         {
             #region FluentKullanmadanOnce
@@ -45,12 +51,12 @@ namespace Business.Concrete
             //Aynı isimde ürün eklenemez
             //bir kategoride en fazla 10 ürün olablir.
             //eğer mevcut kategori sayısı 15'i gectiyse sisteme yeni ürün eklenemez
-           IResult result= BusinessRules.Run(CheckIfProductNameExists(product.ProductName)
-                           , CheckIfProductCountOfCategoryCorrect(product.CategoryId)
-                           , CheckIfCategoryLimitExceded()
-                           );
+            IResult result = BusinessRules.Run(CheckIfProductNameExists(product.ProductName)
+                            , CheckIfProductCountOfCategoryCorrect(product.CategoryId)
+                            , CheckIfCategoryLimitExceded()
+                            );
 
-           if (result != null)
+            if (result != null)
             {
                 return result;
             }
@@ -71,8 +77,10 @@ namespace Business.Concrete
             #endregion
         }
 
-
-
+        //InMemoryCache yapıyoruz.Sile ekleme guncelleme gıbı durumlarda cache ucurmak ıstıyoruz
+        //Farklı parametrelere gmrede cache olustururuz
+        //cacheleri key,values ile tutarız 
+        [CacheAspect]
         public IDataResult<List<Product>> GetAll()
         {
             //iş kodları
@@ -91,6 +99,9 @@ namespace Business.Concrete
             return new SuccessDataResult<List<Product>>(_productDal.GetAll(p => p.CategoryId == id));
         }
 
+
+        [CacheAspect]
+        [PerformanceAspect(5)]
         public IDataResult<Product> GetById(int productId)
         {
             return new SuccessDataResult<Product>(_productDal.Get(p => p.ProductId == productId));
@@ -110,9 +121,13 @@ namespace Business.Concrete
             }
             return new SuccessDataResult<List<ProductDetailDto>>(_productDal.GetProductDetails());
         }
-        
-        
+
+
+
+
         [ValidationAspect(typeof(ProductValidator))]
+        [CacheRemoveAspect("IProductService.Get")]
+        //ürünguncellendıgınde içinde IProductService.Get gecen tum cacheleri temizler
         public IResult Update(Product product)
         {
             _productDal.Update(product);
@@ -132,7 +147,7 @@ namespace Business.Concrete
         private IResult CheckIfProductNameExists(string produtName)
         {
             //Any var mı demek bool deger dondurur
-            var result = _productDal.GetAll(p => p.ProductName==produtName).Any();
+            var result = _productDal.GetAll(p => p.ProductName == produtName).Any();
             if (result)
             {
                 return new ErrorResult(Messages.ProductNameAlreadyExists);
@@ -144,11 +159,19 @@ namespace Business.Concrete
         {
             //Any var mı demek bool deger dondurur
             var result = _categoryService.GetAll();
-            if (result.Data.Count>15)
+            if (result.Data.Count > 15)
             {
                 return new ErrorResult(Messages.CategoryLimitExceded);
             }
             return new SuccessResult();
+        }
+
+        [TransactionScopeAspect]
+        public IResult AddTransactionalTest(Product product)
+        {
+            _productDal.Update(product);
+            _productDal.Add(product);
+            return new SuccessResult(Messages.ProductUpdated);
         }
     }
 }
