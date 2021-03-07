@@ -7,13 +7,13 @@ using Castle.DynamicProxy;
 using Core.Utilities.Interceptors;
 using Core.Utilities.IoC;
 using Microsoft.Extensions.DependencyInjection;
-namespace Core.Aspects.Autofac.Transaction
+namespace Core.Aspects.Autofac.Performance
 {
     public class PerformanceAspect : MethodInterception
     {
         private int _interval;
         private Stopwatch _stopwatch;
-
+        
         public PerformanceAspect(int interval)
         {
             _interval = interval;
