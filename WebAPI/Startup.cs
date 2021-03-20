@@ -45,7 +45,7 @@ namespace WebAPI
             //eger IProductService baðýmlýlýgýný goruyorsan ona býr tane ProductManager new i ver demek oluyor . 
             //Bunu bir data tutulmadýgýnda singleton yapýyoruz
 
-            
+            services.AddCors();
 
             var tokenOptions = Configuration.GetSection("TokenOptions").Get<TokenOptions>();
 
@@ -77,6 +77,11 @@ namespace WebAPI
                 app.UseDeveloperExceptionPage();
             }
 
+            //TRy cache blogu exception bütün sistemi try cache içine almýþ oluyoruz
+            app.ConfigureCustomExceptionMiddleware();
+
+            app.UseCors(builder=>builder.WithOrigins("http://localhost:4200").AllowAnyHeader().AllowAnyOrigin());
+            //http://localhost:4200 bu adresten gelen tüm isteklere put oush get post izin ver demek
             app.UseHttpsRedirection();
 
             app.UseRouting();
